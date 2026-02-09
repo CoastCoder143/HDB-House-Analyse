@@ -12,7 +12,7 @@ It provides comprehensive information about:
 - Planning area information
 - Distance calculations to all nearby features
 
-Author: HDB House Analyse
+Author: HDB House Analyzer
 """
 
 import requests
