@@ -86,10 +86,12 @@ python house_analyzer.py
 The script will prompt you for:
 1. **Onemap credentials** (if not set as environment variables):
    - Email address
-   - Password (hidden input for security)
+   - Password (hidden input - nothing appears when you type, this is normal!)
 2. **House coordinates**:
    - Latitude
    - Longitude
+
+**Important**: When entering your password, you won't see any characters appear on screen. This is intentional for security - just type your password and press Enter.
 
 Example session:
 ```
@@ -105,7 +107,11 @@ https://www.onemap.gov.sg/apidocs/register
 --------------------------------------------------------------------------------
 
 Enter your Onemap email: your_email@example.com
-Enter your Onemap password: ••••••••
+
+💡 Note: Your password will be hidden as you type (no characters will appear).
+   This is normal for security. Just type your password and press Enter.
+
+Enter your Onemap password: [nothing shown while typing]
 
 ✓ Credentials received. Authenticating...
 

@@ -32,6 +32,7 @@ python house_analyzer.py
 
 **What happens:**
 1. You'll be prompted for your Onemap email and password
+   - **Note**: When typing your password, nothing will appear on screen (this is normal for security!)
 2. You'll be prompted for the house coordinates
 3. Analysis runs and displays comprehensive results!
 
@@ -50,7 +51,11 @@ https://www.onemap.gov.sg/apidocs/register
 --------------------------------------------------------------------------------
 
 Enter your Onemap email: myemail@example.com
-Enter your Onemap password: ••••••••
+
+💡 Note: Your password will be hidden as you type (no characters will appear).
+   This is normal for security. Just type your password and press Enter.
+
+Enter your Onemap password: [nothing shown - just type and press Enter]
 
 ✓ Credentials received. Authenticating...
 

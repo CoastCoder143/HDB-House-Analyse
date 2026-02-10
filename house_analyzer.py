@@ -677,7 +677,9 @@ def main():
             if not email:
                 email = input("\nEnter your Onemap email: ").strip()
             if not password:
-                password = getpass.getpass("Enter your Onemap password: ").strip()
+                print("\n💡 Note: Your password will be hidden as you type (no characters will appear).")
+                print("   This is normal for security. Just type your password and press Enter.")
+                password = getpass.getpass("\nEnter your Onemap password: ").strip()
             
             if not email or not password:
                 print("\n❌ Error: Email and password are required!")
