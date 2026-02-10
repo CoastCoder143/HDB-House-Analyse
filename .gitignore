@@ -44,3 +44,8 @@ Thumbs.db
 # Analysis outputs
 house_analysis_report.json
 *_analysis.json
+
+# Environment variables (contains credentials)
+.env
+.env.local
+.env.*.local

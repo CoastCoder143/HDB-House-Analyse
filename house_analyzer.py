@@ -18,8 +18,10 @@ Author: HDB House Analyzer
 import requests
 import json
 import math
+import os
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 import sys
 
 
@@ -38,6 +40,7 @@ class OneMapAPI:
     """Wrapper for Onemap API endpoints."""
     
     BASE_URL = "https://www.onemap.gov.sg/api"
+    AUTH_URL = "https://www.onemap.gov.sg/api/auth/post/getToken"
     
     # Theme codes for different amenities
     THEMES = {
@@ -54,12 +57,111 @@ class OneMapAPI:
         'registered_schools': 'registeredschools'
     }
     
-    def __init__(self):
-        """Initialize the Onemap API client."""
+    def __init__(self, email: Optional[str] = None, password: Optional[str] = None):
+        """
+        Initialize the Onemap API client.
+        
+        Args:
+            email: Onemap API email (optional, can be set via environment variable ONEMAP_EMAIL)
+            password: Onemap API password (optional, can be set via environment variable ONEMAP_PASSWORD)
+        """
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'HDB-House-Analyzer/1.0'
         })
+        
+        # Get credentials from parameters or environment variables
+        self.email = email or os.getenv('ONEMAP_EMAIL')
+        self.password = password or os.getenv('ONEMAP_PASSWORD')
+        
+        self.access_token = None
+        self.token_expiry = None
+        
+        # Try to authenticate if credentials are provided
+        if self.email and self.password:
+            self._authenticate()
+    
+    def _authenticate(self) -> bool:
+        """
+        Authenticate with Onemap API and get access token.
+        
+        Returns:
+            True if authentication successful, False otherwise
+        """
+        try:
+            payload = {
+                'email': self.email,
+                'password': self.password
+            }
+            
+            response = requests.post(
+                self.AUTH_URL,
+                json=payload,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.access_token = data.get('access_token')
+                
+                # Tokens typically expire in 3 days, set expiry time
+                expires_in = data.get('expiry_timestamp', 259200)  # default 3 days in seconds
+                self.token_expiry = datetime.now() + timedelta(seconds=expires_in)
+                
+                # Update session headers with token
+                if self.access_token:
+                    self.session.headers.update({
+                        'Authorization': self.access_token
+                    })
+                    return True
+            else:
+                print(f"Authentication failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"Error during authentication: {e}")
+            return False
+        
+        return False
+    
+    def _ensure_authenticated(self) -> bool:
+        """
+        Ensure we have a valid authentication token.
+        
+        Returns:
+            True if authenticated, False otherwise
+        """
+        # Check if token exists and is not expired
+        if self.access_token and self.token_expiry:
+            if datetime.now() < self.token_expiry:
+                return True
+        
+        # Try to re-authenticate
+        if self.email and self.password:
+            return self._authenticate()
+        
+        return False
+    
+    def _make_authenticated_request(self, method: str, url: str, **kwargs) -> requests.Response:
+        """
+        Make an authenticated request to the API.
+        
+        Args:
+            method: HTTP method (get, post, etc.)
+            url: URL to request
+            **kwargs: Additional arguments to pass to requests
+            
+        Returns:
+            Response object
+        """
+        # Ensure we're authenticated
+        if not self._ensure_authenticated():
+            # If no credentials, try without auth (some endpoints might be public)
+            pass
+        
+        # Make the request
+        response = self.session.request(method, url, **kwargs)
+        return response
     
     def reverse_geocode(self, lat: float, lon: float) -> Dict:
         """
@@ -81,7 +183,7 @@ class OneMapAPI:
         }
         
         try:
-            response = self.session.get(url, params=params, timeout=10)
+            response = self._make_authenticated_request('GET', url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -109,7 +211,7 @@ class OneMapAPI:
         }
         
         try:
-            response = self.session.get(url, params=params, timeout=10)
+            response = self._make_authenticated_request('GET', url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -136,7 +238,7 @@ class OneMapAPI:
         }
         
         try:
-            response = self.session.get(url, params=params, timeout=10)
+            response = self._make_authenticated_request('GET', url, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
             
@@ -165,7 +267,7 @@ class OneMapAPI:
         }
         
         try:
-            response = self.session.get(url, params=params, timeout=10)
+            response = self._make_authenticated_request('GET', url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -195,7 +297,7 @@ class OneMapAPI:
         }
         
         try:
-            response = self.session.get(url, params=params, timeout=10)
+            response = self._make_authenticated_request('GET', url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
         except Exception as e:
@@ -550,6 +652,22 @@ def main():
     print("="*80)
     print("HDB HOUSE ANALYZER - Using Onemap API")
     print("="*80)
+    
+    # Check for API credentials
+    email = os.getenv('ONEMAP_EMAIL')
+    password = os.getenv('ONEMAP_PASSWORD')
+    
+    if not email or not password:
+        print("\n⚠️  WARNING: Onemap API credentials not found!")
+        print("The Onemap API requires authentication. Please set up your credentials.")
+        print("\nYou have two options:")
+        print("1. Set environment variables:")
+        print("   export ONEMAP_EMAIL='your_email@example.com'")
+        print("   export ONEMAP_PASSWORD='your_password'")
+        print("\n2. Register for free at: https://www.onemap.gov.sg/apidocs/register")
+        print("   Then create a .env file or set the environment variables above.")
+        print("\nFor now, continuing without authentication (some features may not work)...")
+        print("="*80)
     
     # Get user input
     if len(sys.argv) >= 3:

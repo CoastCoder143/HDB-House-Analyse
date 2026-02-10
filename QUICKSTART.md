@@ -1,6 +1,22 @@
 # Quick Start Guide - HDB House Analyzer
 
-Get started with the HDB House Analyzer in 3 simple steps!
+Get started with the HDB House Analyzer in 4 simple steps!
+
+## Step 0: Authentication Setup (REQUIRED) ⚠️
+
+**The Onemap API now requires authentication!**
+
+1. **Register for free**: https://www.onemap.gov.sg/apidocs/register
+2. **Set your credentials**:
+   
+   ```bash
+   export ONEMAP_EMAIL='your_email@example.com'
+   export ONEMAP_PASSWORD='your_password'
+   ```
+
+**Important**: Without authentication, you'll get "401 Unauthorized" errors!
+
+For detailed setup instructions, see [AUTHENTICATION.md](AUTHENTICATION.md)
 
 ## Step 1: Install
 

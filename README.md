@@ -2,6 +2,18 @@
 
 A comprehensive Python tool to analyze HDB (Housing & Development Board) houses in Singapore using the Onemap API. This script provides detailed information about any location including nearby amenities, public transport, major roads, and planning area details.
 
+## ⚠️ Authentication Required
+
+**Important**: The Onemap API now requires authentication. Before using this tool, you must:
+
+1. **Register** for free at: https://www.onemap.gov.sg/apidocs/register
+2. **Set credentials** as environment variables:
+   ```bash
+   export ONEMAP_EMAIL='your_email@example.com'
+   export ONEMAP_PASSWORD='your_password'
+   ```
+3. See [AUTHENTICATION.md](AUTHENTICATION.md) for detailed setup instructions
+
 ## Features ✨
 
 - **Address Information**: Reverse geocoding to get detailed address from coordinates
@@ -35,6 +47,7 @@ A comprehensive Python tool to analyze HDB (Housing & Development Board) houses 
 - **Distance Calculations**: Haversine formula for accurate distance measurements
 - **Detailed Reporting**: Comprehensive analysis with sorting by distance
 - **JSON Export**: Save full analysis report in JSON format
+- **Token-Based Authentication**: Automatic token management and refresh
 
 ## Installation 🚀
 
@@ -48,6 +61,15 @@ cd HDB-House-Analyse
 ```bash
 pip install -r requirements.txt
 ```
+
+3. **Set up authentication** (REQUIRED):
+```bash
+# Register at https://www.onemap.gov.sg/apidocs/register first!
+export ONEMAP_EMAIL='your_email@example.com'
+export ONEMAP_PASSWORD='your_password'
+```
+
+See [AUTHENTICATION.md](AUTHENTICATION.md) for detailed authentication setup.
 
 ## Usage 📖
 
