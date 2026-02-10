@@ -1,24 +1,17 @@
 # Quick Start Guide - HDB House Analyzer
 
-Get started with the HDB House Analyzer in 4 simple steps!
+Get started with the HDB House Analyzer in just 3 steps!
 
-## Step 0: Authentication Setup (REQUIRED) ⚠️
+## Step 1: Register (One-time, FREE)
 
-**The Onemap API now requires authentication!**
+Register for a Onemap API account (if you don't have one):
+https://www.onemap.gov.sg/apidocs/register
 
-1. **Register for free**: https://www.onemap.gov.sg/apidocs/register
-2. **Set your credentials**:
-   
-   ```bash
-   export ONEMAP_EMAIL='your_email@example.com'
-   export ONEMAP_PASSWORD='your_password'
-   ```
+- Fill in your details
+- Verify your email
+- That's it! You're ready to go.
 
-**Important**: Without authentication, you'll get "401 Unauthorized" errors!
-
-For detailed setup instructions, see [AUTHENTICATION.md](AUTHENTICATION.md)
-
-## Step 1: Install
+## Step 2: Install
 
 ```bash
 # Clone the repository
@@ -29,28 +22,64 @@ cd HDB-House-Analyse
 pip install -r requirements.txt
 ```
 
-## Step 2: Run the Analyzer
+## Step 3: Run the Analyzer
 
-### Option A: Interactive Mode (Easiest)
+Simply run the script - it will ask for your credentials:
 
 ```bash
 python house_analyzer.py
 ```
 
-You'll be prompted to enter coordinates:
+**What happens:**
+1. You'll be prompted for your Onemap email and password
+2. You'll be prompted for the house coordinates
+3. Analysis runs and displays comprehensive results!
+
+### Example Session
+
 ```
+================================================================================
+HDB HOUSE ANALYZER - Using Onemap API
+================================================================================
+
+🔐 Onemap API Authentication Required
+--------------------------------------------------------------------------------
+The Onemap API requires authentication to access data.
+If you don't have an account, register for FREE at:
+https://www.onemap.gov.sg/apidocs/register
+--------------------------------------------------------------------------------
+
+Enter your Onemap email: myemail@example.com
+Enter your Onemap password: ••••••••
+
+✓ Credentials received. Authenticating...
+
 Please enter the house coordinates:
 Latitude: 1.3048
 Longitude: 103.8318
+
+[Analysis results displayed...]
 ```
 
-### Option B: Command Line Mode (Quick)
+### Quick Mode with Coordinates
 
 ```bash
 python house_analyzer.py 1.3048 103.8318
 ```
 
-## Step 3: View Your Results
+Still prompts for credentials, but coordinates are pre-filled.
+
+### Skip Prompts (Optional)
+
+Set environment variables to avoid credential prompts:
+
+```bash
+export ONEMAP_EMAIL='your_email@example.com'
+export ONEMAP_PASSWORD='your_password'
+python house_analyzer.py 1.3048 103.8318
+```
+
+## What You'll See
 
 The analyzer will display:
 - ✅ Address information

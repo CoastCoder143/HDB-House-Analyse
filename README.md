@@ -4,15 +4,19 @@ A comprehensive Python tool to analyze HDB (Housing & Development Board) houses 
 
 ## ⚠️ Authentication Required
 
-**Important**: The Onemap API now requires authentication. Before using this tool, you must:
+**Important**: The Onemap API requires authentication. You have two options:
 
-1. **Register** for free at: https://www.onemap.gov.sg/apidocs/register
-2. **Set credentials** as environment variables:
+1. **Interactive Mode** (Recommended for first-time users):
+   - Just run the script - it will ask for your credentials
+   - Register at: https://www.onemap.gov.sg/apidocs/register if you don't have an account
+
+2. **Environment Variables** (Optional for convenience):
    ```bash
    export ONEMAP_EMAIL='your_email@example.com'
    export ONEMAP_PASSWORD='your_password'
    ```
-3. See [AUTHENTICATION.md](AUTHENTICATION.md) for detailed setup instructions
+
+See [AUTHENTICATION.md](AUTHENTICATION.md) for more details.
 
 ## Features ✨
 
@@ -48,6 +52,7 @@ A comprehensive Python tool to analyze HDB (Housing & Development Board) houses 
 - **Detailed Reporting**: Comprehensive analysis with sorting by distance
 - **JSON Export**: Save full analysis report in JSON format
 - **Token-Based Authentication**: Automatic token management and refresh
+- **Interactive Credential Prompts**: No need to set environment variables
 
 ## Installation 🚀
 
@@ -62,27 +67,48 @@ cd HDB-House-Analyse
 pip install -r requirements.txt
 ```
 
-3. **Set up authentication** (REQUIRED):
-```bash
-# Register at https://www.onemap.gov.sg/apidocs/register first!
-export ONEMAP_EMAIL='your_email@example.com'
-export ONEMAP_PASSWORD='your_password'
-```
+3. **Register for Onemap API** (one-time, FREE):
+   - Visit: https://www.onemap.gov.sg/apidocs/register
+   - Fill in your details and verify your email
 
-See [AUTHENTICATION.md](AUTHENTICATION.md) for detailed authentication setup.
+That's it! The script will prompt you for credentials when you run it.
 
 ## Usage 📖
 
-### Method 1: Interactive Mode
+### Method 1: Interactive Mode (Recommended)
 
-Run the script without arguments to enter interactive mode:
+Simply run the script - it will ask for everything it needs:
 
 ```bash
 python house_analyzer.py
 ```
 
-You will be prompted to enter the latitude and longitude:
+The script will prompt you for:
+1. **Onemap credentials** (if not set as environment variables):
+   - Email address
+   - Password (hidden input for security)
+2. **House coordinates**:
+   - Latitude
+   - Longitude
+
+Example session:
 ```
+================================================================================
+HDB HOUSE ANALYZER - Using Onemap API
+================================================================================
+
+🔐 Onemap API Authentication Required
+--------------------------------------------------------------------------------
+The Onemap API requires authentication to access data.
+If you don't have an account, register for FREE at:
+https://www.onemap.gov.sg/apidocs/register
+--------------------------------------------------------------------------------
+
+Enter your Onemap email: your_email@example.com
+Enter your Onemap password: ••••••••
+
+✓ Credentials received. Authenticating...
+
 Please enter the house coordinates:
 Latitude: 1.3521
 Longitude: 103.8198
@@ -93,6 +119,18 @@ Longitude: 103.8198
 Provide coordinates directly as command line arguments:
 
 ```bash
+python house_analyzer.py 1.3521 103.8198
+```
+
+Note: You'll still be prompted for credentials if they're not in environment variables.
+
+### Method 3: Pre-set Environment Variables (Optional)
+
+For convenience, you can set credentials once and avoid repeated prompts:
+
+```bash
+export ONEMAP_EMAIL='your_email@example.com'
+export ONEMAP_PASSWORD='your_password'
 python house_analyzer.py 1.3521 103.8198
 ```
 

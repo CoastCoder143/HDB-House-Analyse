@@ -5,22 +5,27 @@ Example usage of the HDB House Analyzer
 This script demonstrates how to use the house_analyzer module
 programmatically in your own Python code.
 
-NOTE: Authentication is required. Set environment variables:
-    export ONEMAP_EMAIL='your_email@example.com'
-    export ONEMAP_PASSWORD='your_password'
+NOTE: Authentication options:
+1. Interactive: Script prompts for credentials when run
+2. Environment variables (for automation):
+   export ONEMAP_EMAIL='your_email@example.com'
+   export ONEMAP_PASSWORD='your_password'
+3. Explicit credentials in code (see example_with_explicit_credentials)
 
-Or see AUTHENTICATION.md for other methods.
+See AUTHENTICATION.md for more details.
 """
 
 import os
 from house_analyzer import HouseAnalyzer, OneMapAPI
 
 def example_basic_usage():
-    """Basic usage example."""
+    """Basic usage example - uses environment variables or prompts."""
     print("Example 1: Basic Analysis")
     print("-" * 50)
     
-    # Initialize the analyzer (uses environment variables for auth)
+    # Initialize the analyzer
+    # If credentials are in environment variables, uses those
+    # Otherwise, would prompt interactively (not suitable for scripts)
     analyzer = HouseAnalyzer()
     
     # Analyze a location (Orchard Road area)

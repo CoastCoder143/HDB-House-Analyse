@@ -19,6 +19,7 @@ import requests
 import json
 import math
 import os
+import getpass
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -308,9 +309,15 @@ class OneMapAPI:
 class HouseAnalyzer:
     """Main class for analyzing house locations."""
     
-    def __init__(self):
-        """Initialize the house analyzer."""
-        self.api = OneMapAPI()
+    def __init__(self, email: Optional[str] = None, password: Optional[str] = None):
+        """
+        Initialize the house analyzer.
+        
+        Args:
+            email: Onemap API email (optional)
+            password: Onemap API password (optional)
+        """
+        self.api = OneMapAPI(email=email, password=password)
     
     @staticmethod
     def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -658,16 +665,29 @@ def main():
     password = os.getenv('ONEMAP_PASSWORD')
     
     if not email or not password:
-        print("\n⚠️  WARNING: Onemap API credentials not found!")
-        print("The Onemap API requires authentication. Please set up your credentials.")
-        print("\nYou have two options:")
-        print("1. Set environment variables:")
-        print("   export ONEMAP_EMAIL='your_email@example.com'")
-        print("   export ONEMAP_PASSWORD='your_password'")
-        print("\n2. Register for free at: https://www.onemap.gov.sg/apidocs/register")
-        print("   Then create a .env file or set the environment variables above.")
-        print("\nFor now, continuing without authentication (some features may not work)...")
-        print("="*80)
+        print("\n🔐 Onemap API Authentication Required")
+        print("-" * 80)
+        print("The Onemap API requires authentication to access data.")
+        print("If you don't have an account, register for FREE at:")
+        print("https://www.onemap.gov.sg/apidocs/register")
+        print("-" * 80)
+        
+        # Prompt for credentials
+        try:
+            if not email:
+                email = input("\nEnter your Onemap email: ").strip()
+            if not password:
+                password = getpass.getpass("Enter your Onemap password: ").strip()
+            
+            if not email or not password:
+                print("\n❌ Error: Email and password are required!")
+                print("Please register at: https://www.onemap.gov.sg/apidocs/register")
+                sys.exit(1)
+                
+            print("\n✓ Credentials received. Authenticating...")
+        except KeyboardInterrupt:
+            print("\n\n❌ Authentication cancelled by user.")
+            sys.exit(1)
     
     # Get user input
     if len(sys.argv) >= 3:
@@ -694,8 +714,8 @@ def main():
         if response.lower() != 'y':
             sys.exit(0)
     
-    # Perform analysis
-    analyzer = HouseAnalyzer()
+    # Perform analysis with credentials
+    analyzer = HouseAnalyzer(email=email, password=password)
     results = analyzer.analyze_house(latitude, longitude, max_results=10)
     
     # Print detailed report
