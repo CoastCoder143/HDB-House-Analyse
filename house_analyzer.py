@@ -169,8 +169,8 @@ class OneMapAPI:
         Get address from coordinates using reverse geocoding.
         
         Args:
-            lat: Latitude
-            lon: Longitude
+            lat: Latitude (WGS84 format)
+            lon: Longitude (WGS84 format)
             
         Returns:
             Dictionary with geocoding results
@@ -179,8 +179,7 @@ class OneMapAPI:
         params = {
             'location': f"{lat},{lon}",
             'buffer': 10,
-            'addressType': 'All',
-            'otherFeatures': 'Y'
+            'addressType': 'All'
         }
         
         try:

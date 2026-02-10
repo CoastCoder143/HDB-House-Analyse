@@ -8,6 +8,26 @@ The Onemap API is Singapore's official government mapping API provided by the Si
 
 **Base URL**: `https://www.onemap.gov.sg/api`
 
+## Authentication
+
+All API endpoints require authentication using an access token.
+
+**Authentication Flow**:
+1. Obtain access token by POSTing credentials to `/auth/post/getToken`
+2. Include token in all subsequent requests via the `Authorization` header
+3. Token format: `Authorization: {access_token}` (just the token value, no "Bearer" prefix)
+
+**Example Header**:
+```
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+**Common Error Responses**:
+- `400` - Please send the access token in the request header
+- `401` - Token has expired or is invalid
+- `403` - Access forbidden
+- `429` - API limit(s) exceeded
+
 ## Endpoints Used
 
 ### 1. Reverse Geocoding API
@@ -16,22 +36,46 @@ The Onemap API is Singapore's official government mapping API provided by the Si
 
 **Endpoint**: `GET /public/revgeocode`
 
+**Authentication**: Requires Authorization header with access token.
+
 **Parameters**:
-- `location` (required): Latitude and longitude in format "lat,lon"
-- `buffer` (optional): Buffer distance in meters (default: 10)
-- `addressType` (optional): Type of address to return (All, HDB, etc.)
-- `otherFeatures` (optional): Include other features (Y/N)
+- `location` (required): Latitude and longitude in WGS84 format "lat,lon"
+- `buffer` (optional): Buffer distance in meters (0-500, default: returns max 10 nearest buildings)
+- `addressType` (optional): Type of address to return - "All" or "HDB"
+
+**Maximum Limits**:
+- Buffer/radius: 500m for buildings, 20m for roads
+- Default: Returns maximum of 10 nearest buildings
 
 **Returns**:
-- Building name
+- Building name (returns "null" if building is not named)
 - Block number
 - Road name
 - Postal code
-- Precise coordinates
+- Coordinates (both WGS84 and SVY21 format)
+- Fields without value return as "NIL"
 
 **Example**:
 ```
-GET /api/public/revgeocode?location=1.3048,103.8318&buffer=10&addressType=All&otherFeatures=Y
+GET /api/public/revgeocode?location=1.3254295,103.9005321&buffer=40&addressType=All
+```
+
+**Sample Response**:
+```json
+{
+  "GeocodeInfo": [
+    {
+      "BUILDINGNAME": "KAMPONG UBI VIEW",
+      "BLOCK": "351",
+      "ROAD": "UBI AVENUE 1",
+      "POSTALCODE": "400351",
+      "XCOORD": "35501.9607216",
+      "YCOORD": "34191.1578935",
+      "LATITUDE": "1.325486284730739",
+      "LONGITUDE": "103.90072773995409"
+    }
+  ]
+}
 ```
 
 ---
