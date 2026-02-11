@@ -251,6 +251,13 @@ class OneMapAPI:
             if 'SrchResults' in data and data['SrchResults']:
                 return data['SrchResults'][1:] if len(data['SrchResults']) > 1 else []
             return []
+        except requests.exceptions.HTTPError as e:
+            # Silently skip 404 errors (theme not available in API)
+            if e.response.status_code == 404:
+                return []
+            # Show other HTTP errors
+            print(f"Error getting theme data for {query_name}: {e}")
+            return []
         except Exception as e:
             print(f"Error getting theme data for {query_name}: {e}")
             return []
@@ -276,6 +283,13 @@ class OneMapAPI:
             response = self._make_authenticated_request('GET', url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.HTTPError as e:
+            # Silently skip 400/404 errors (location not in planning area database)
+            if e.response.status_code in [400, 404]:
+                return {}
+            # Show other HTTP errors
+            print(f"Error getting planning area: {e}")
+            return {}
         except Exception as e:
             print(f"Error getting planning area: {e}")
             return {}
