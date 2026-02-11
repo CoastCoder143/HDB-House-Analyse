@@ -25,6 +25,14 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 import sys
 
+# Import property insights engine
+try:
+    from property_insights import PropertyInsights
+    INSIGHTS_AVAILABLE = True
+except ImportError:
+    INSIGHTS_AVAILABLE = False
+    print("⚠️  Warning: property_insights module not found. Smart insights disabled.")
+
 
 @dataclass
 class Location:
@@ -682,17 +690,74 @@ class HouseAnalyzer:
     
     def print_detailed_report(self, results: Dict):
         """
-        Print a detailed analysis report.
+        Print a detailed analysis report with smart property insights.
         
         Args:
             results: Analysis results dictionary
         """
         print(f"\n{'='*80}")
-        print(f"DETAILED ANALYSIS REPORT")
+        print(f"🏠 SMART PROPERTY ANALYSIS REPORT 🔍")
         print(f"{'='*80}\n")
         
-        # Summary
-        print("📊 SUMMARY")
+        # Generate smart insights if available
+        if INSIGHTS_AVAILABLE:
+            insights_engine = PropertyInsights()
+            scores = insights_engine.calculate_livability_score(results)
+            smart_insights = insights_engine.generate_smart_insights(results, scores)
+            property_profile = insights_engine.generate_property_profile(results, scores)
+            
+            # EXECUTIVE SUMMARY (Property Agent Style)
+            print("🎯 EXECUTIVE SUMMARY - Property Agent Analysis")
+            print("=" * 80)
+            overall_score = scores['overall']
+            grade = insights_engine.get_grade_from_score(overall_score)
+            emoji = insights_engine.get_score_emoji(overall_score)
+            
+            print(f"\n{emoji} OVERALL LIVABILITY SCORE: {overall_score:.1f}/100 (Grade: {grade})")
+            print(f"\nScore Breakdown:")
+            print(f"  🚇 Transport:    {scores['transport']:.1f}/25  {insights_engine.get_score_emoji(scores['transport']*4)}")
+            print(f"  🎓 Education:    {scores['education']:.1f}/20  {insights_engine.get_score_emoji(scores['education']*5)}")
+            print(f"  🏥 Healthcare:   {scores['healthcare']:.1f}/15  {insights_engine.get_score_emoji(scores['healthcare']*6.67)}")
+            print(f"  🛒 Shopping:     {scores['shopping']:.1f}/20  {insights_engine.get_score_emoji(scores['shopping']*5)}")
+            print(f"  🌳 Recreation:   {scores['recreation']:.1f}/10  {insights_engine.get_score_emoji(scores['recreation']*10)}")
+            print(f"  🛡️  Safety:       {scores['safety']:.1f}/10  {insights_engine.get_score_emoji(scores['safety']*10)}")
+            
+            print(f"\n💡 SMART INSIGHTS - What Smart Agents Notice:")
+            print("-" * 80)
+            for insight in smart_insights:
+                print(f"  {insight}")
+            
+            print(f"\n👥 IDEAL FOR:")
+            print("-" * 80)
+            if property_profile['ideal_for']:
+                for demographic in property_profile['ideal_for']:
+                    print(f"  ✓ {demographic}")
+            else:
+                print(f"  • General buyers/renters")
+            
+            print(f"\n🌟 KEY SELLING POINTS:")
+            print("-" * 80)
+            if property_profile['selling_points']:
+                for point in property_profile['selling_points']:
+                    print(f"  • {point}")
+            else:
+                print(f"  • Basic amenities available")
+            
+            if property_profile['concerns']:
+                print(f"\n⚠️  AREAS TO CONSIDER:")
+                print("-" * 80)
+                for concern in property_profile['concerns']:
+                    print(f"  • {concern}")
+            
+            print(f"\n💰 INVESTMENT INSIGHTS:")
+            print("-" * 80)
+            print(f"  Investment Potential: {property_profile['investment_potential']}")
+            print(f"  Rental Attractiveness: {property_profile['rental_attractiveness']}")
+            
+            print(f"\n{'='*80}\n")
+        
+        # Regular Summary
+        print("📊 DETAILED BREAKDOWN")
         print("-" * 80)
         summary = results['summary']
         print(f"Total Amenities Found: {summary['total_amenities_found']}")
@@ -797,7 +862,8 @@ Examples:
     args = parser.parse_args()
     
     print("="*80)
-    print("HDB HOUSE ANALYZER - Using Onemap API")
+    print("🏠 SMART PROPERTY AGENT - HDB House Analyzer 🔍")
+    print("Using Onemap API with Intelligent Insights & Recommendations")
     print("="*80)
     
     # Check for pre-obtained token first
@@ -874,14 +940,17 @@ Examples:
     
     # Show analysis mode
     if args.all_themes:
-        print(f"\n🌟 Using ALL available themes from Onemap API (100+ categories)")
-        print(f"   This will take longer but provide more comprehensive data.")
+        print(f"\n🌟 SMART PROPERTY AGENT MODE - Using ALL 100+ Onemap themes")
+        print(f"   🔍 Comprehensive analysis with smart insights & recommendations")
+        print(f"   ⏱️  This will take longer but provides the best property intelligence")
     else:
-        print(f"\n📋 Using curated theme categories (faster, focused results)")
-        print(f"   Use --all-themes flag to access 100+ theme categories")
+        print(f"\n📋 STANDARD MODE - Using curated theme categories (faster)")
+        print(f"   💡 TIP: Use --all-themes for smartest property agent analysis!")
+        print(f"   🌟 Get livability scores, investment insights & hidden value factors")
     
-    print(f"   Search radius: {args.radius} km")
-    print(f"   Max results per category: {args.max_results}")
+    print(f"   🎯 Search radius: {args.radius} km")
+    print(f"   📊 Max results per category: {args.max_results}")
+    print(f"\n{'='*80}")
     
     # Perform analysis with credentials or token
     analyzer = HouseAnalyzer(email=email, password=password, access_token=token)
