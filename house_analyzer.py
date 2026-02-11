@@ -106,7 +106,13 @@ class OneMapAPI:
                 self.access_token = data.get('access_token')
                 
                 # Tokens typically expire in 3 days, set expiry time
-                expires_in = data.get('expiry_timestamp', 259200)  # default 3 days in seconds
+                # Convert to int in case API returns string
+                expires_in_raw = data.get('expiry_timestamp', 259200)
+                try:
+                    expires_in = int(expires_in_raw)
+                except (ValueError, TypeError):
+                    expires_in = 259200  # default 3 days in seconds
+                
                 self.token_expiry = datetime.now() + timedelta(seconds=expires_in)
                 
                 # Update session headers with token
