@@ -148,11 +148,46 @@ class OneMapAPI:
                 print(f"Authentication failed: {response.status_code} - {response.text}")
                 return False
                 
+        except requests.exceptions.ConnectionError as e:
+            print(f"⚠️  Network error - Cannot reach Onemap authentication server")
+            print(f"   Please check your internet connection.")
+            print(f"   Make sure you can access: {self.AUTH_URL}")
+            return False
+        except requests.exceptions.Timeout:
+            print(f"⚠️  Authentication timeout - Server not responding")
+            return False
         except Exception as e:
             print(f"Error during authentication: {e}")
             return False
         
         return False
+    
+    def check_connectivity(self) -> bool:
+        """
+        Check if we can reach the Onemap API server.
+        
+        Returns:
+            True if server is reachable, False otherwise
+        """
+        try:
+            # Try a simple request to check connectivity
+            response = requests.get(f"{self.BASE_URL}/public/ping", timeout=5)
+            return True
+        except requests.exceptions.ConnectionError:
+            print("⚠️  Cannot reach Onemap API server (www.onemap.gov.sg)")
+            print("   Possible causes:")
+            print("   1. No internet connection")
+            print("   2. Firewall blocking access")
+            print("   3. DNS resolution failure")
+            print("   ")
+            print("   Please ensure you have internet access and try again.")
+            return False
+        except requests.exceptions.Timeout:
+            print("⚠️  Onemap API server timeout")
+            return False
+        except Exception as e:
+            print(f"⚠️  Connectivity check failed: {e}")
+            return False
     
     def _ensure_authenticated(self) -> bool:
         """
@@ -243,6 +278,13 @@ class OneMapAPI:
             response = self._make_authenticated_request('GET', url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.ConnectionError as e:
+            print(f"⚠️  Network error - Cannot reach Onemap API server")
+            print(f"   Please check your internet connection and try again.")
+            return {}
+        except requests.exceptions.Timeout:
+            print(f"⚠️  Request timeout - Onemap API server not responding")
+            return {}
         except Exception as e:
             print(f"Error in location search: {e}")
             return {}
@@ -270,6 +312,13 @@ class OneMapAPI:
             response = self._make_authenticated_request('GET', url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()  # Returns list directly
+        except requests.exceptions.ConnectionError as e:
+            print(f"⚠️  Network error - Cannot reach Onemap API server")
+            print(f"   Please check your internet connection and try again.")
+            return []
+        except requests.exceptions.Timeout:
+            print(f"⚠️  Request timeout - Onemap API server not responding")
+            return []
         except Exception as e:
             print(f"Error getting nearest MRT stops: {e}")
             return []
@@ -297,6 +346,14 @@ class OneMapAPI:
             response = self._make_authenticated_request('GET', url, params=params, timeout=10)
             response.raise_for_status()
             return response.json()  # Returns list directly
+        except requests.exceptions.ConnectionError as e:
+            print(f"⚠️  Network error - Cannot reach Onemap API server")
+            print(f"   Please check your internet connection and try again.")
+            print(f"   Error: {e}")
+            return []
+        except requests.exceptions.Timeout:
+            print(f"⚠️  Request timeout - Onemap API server not responding")
+            return []
         except Exception as e:
             print(f"Error getting nearest bus stops: {e}")
             return []
@@ -617,6 +674,22 @@ class HouseAnalyzer:
         print(f"\n{'='*80}")
         print(f"HDB HOUSE ANALYSIS REPORT")
         print(f"{'='*80}\n")
+        
+        # Check connectivity first
+        print("🔍 Checking connectivity to Onemap API...")
+        if not self.api.check_connectivity():
+            print("\n" + "="*80)
+            print("❌ ANALYSIS CANNOT PROCEED")
+            print("="*80)
+            print("\nThe analyzer requires internet access to:")
+            print("  • www.onemap.gov.sg (Singapore Government API)")
+            print("\nPlease:")
+            print("  1. Check your internet connection")
+            print("  2. Ensure firewall allows HTTPS to www.onemap.gov.sg")
+            print("  3. Try again once connected")
+            print("\nFor offline testing, consider using mock data or cached results.")
+            return results
+        print("✅ Connection OK\n")
         
         # 1. Get address information
         print("🏠 Retrieving address information...")
