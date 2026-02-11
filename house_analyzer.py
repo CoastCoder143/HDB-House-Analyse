@@ -432,19 +432,41 @@ class OneMapAPI:
             return {}
     
     def get_route(self, start_lat: float, start_lon: float, end_lat: float, end_lon: float, 
-                  route_type: str = 'drive') -> Dict:
+                  route_type: str = 'drive', date: Optional[str] = None, time: Optional[str] = None,
+                  mode: Optional[str] = None, max_walk_distance: Optional[int] = None,
+                  num_itineraries: Optional[int] = None) -> Dict:
         """
         Get route information between two points.
         
         Args:
-            start_lat: Start latitude
-            start_lon: Start longitude
-            end_lat: End latitude
-            end_lon: End longitude
-            route_type: Type of route (drive, walk, cycle, pt)
+            start_lat: Start latitude (WGS84)
+            start_lon: Start longitude (WGS84)
+            end_lat: End latitude (WGS84)
+            end_lon: End longitude (WGS84)
+            route_type: Type of route - 'drive', 'walk', 'cycle', or 'pt' (public transport)
+            date: For PT mode - Date in MM-DD-YYYY format (required if route_type='pt')
+            time: For PT mode - Time in HH:MM:SS format, 24-hour clock (required if route_type='pt')
+            mode: For PT mode - 'transit', 'bus', or 'rail' (required if route_type='pt')
+            max_walk_distance: For PT mode - Maximum walking distance in meters (optional)
+            num_itineraries: For PT mode - Number of results to return, 1-3 (optional)
             
         Returns:
-            Route information including distance
+            Route information including distance and time
+            
+        Example:
+            # Simple drive route
+            route = api.get_route(1.3521, 103.8198, 1.2844, 103.8607, route_type='drive')
+            
+            # Public transport route
+            route = api.get_route(
+                1.3521, 103.8198, 1.2844, 103.8607, 
+                route_type='pt',
+                date='02-11-2026',
+                time='08:30:00',
+                mode='transit',
+                max_walk_distance=1000,
+                num_itineraries=3
+            )
         """
         url = f"{self.BASE_URL}/public/routingsvc/route"
         params = {
@@ -453,13 +475,76 @@ class OneMapAPI:
             'routeType': route_type
         }
         
+        # Add PT-specific parameters if route_type is 'pt'
+        if route_type.lower() == 'pt':
+            # PT mode requires date, time, and mode
+            if date:
+                params['date'] = date
+            if time:
+                params['time'] = time
+            if mode:
+                params['mode'] = mode.upper()  # API expects uppercase (TRANSIT, BUS, RAIL)
+            
+            # Optional PT parameters
+            if max_walk_distance is not None:
+                params['maxWalkDistance'] = str(max_walk_distance)
+            if num_itineraries is not None:
+                params['numItineraries'] = str(num_itineraries)
+        
         try:
-            response = self._make_authenticated_request('GET', url, params=params, timeout=10)
+            response = self._make_authenticated_request('GET', url, params=params, timeout=15)
             response.raise_for_status()
             return response.json()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                # No route found
+                return {'error': 'No route found between specified locations'}
+            else:
+                return {'error': f'API error: {str(e)}'}
         except Exception as e:
-            # Route API might not always be available, use straight-line distance
-            return {}
+            # Route API might not always be available
+            return {'error': f'Route calculation failed: {str(e)}'}
+    
+    @staticmethod
+    def format_route_time(seconds: int) -> str:
+        """
+        Format route time from seconds to human-readable format.
+        
+        Args:
+            seconds: Time in seconds
+            
+        Returns:
+            Formatted time string (e.g., "15 mins", "1h 30m")
+        """
+        if seconds < 60:
+            return f"{seconds} sec"
+        elif seconds < 3600:
+            minutes = seconds // 60
+            return f"{minutes} min{'s' if minutes > 1 else ''}"
+        else:
+            hours = seconds // 3600
+            minutes = (seconds % 3600) // 60
+            if minutes > 0:
+                return f"{hours}h {minutes}m"
+            else:
+                return f"{hours}h"
+    
+    @staticmethod
+    def format_route_distance(meters: float) -> str:
+        """
+        Format route distance from meters to human-readable format.
+        
+        Args:
+            meters: Distance in meters
+            
+        Returns:
+            Formatted distance string (e.g., "500m", "2.5km")
+        """
+        if meters < 1000:
+            return f"{int(meters)}m"
+        else:
+            km = meters / 1000
+            return f"{km:.1f}km"
 
 
 class HouseAnalyzer:
