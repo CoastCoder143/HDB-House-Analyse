@@ -1,6 +1,20 @@
-# HDB House Analyzer 🏠
+# 🏠 Smart Property Agent - HDB House Analyzer 🔍
 
-A comprehensive Python tool to analyze HDB (Housing & Development Board) houses in Singapore using the Onemap API. This script provides detailed information about any location including nearby amenities, public transport, major roads, and planning area details.
+A **revolutionary** Python tool that transforms you into the smartest property agent in Singapore! Using 100+ Onemap API themes with intelligent analysis, it provides insights that others miss - livability scoring, investment potential, target demographics, and hidden value factors.
+
+## 🌟 What Makes This Smart?
+
+Unlike basic property tools that just list amenities, this analyzer:
+
+- ✅ **Livability Scoring** (0-100 with letter grades A+ to D)
+- ✅ **Smart Insights** that identify hidden value & risks
+- ✅ **Investment Potential** ratings (High/Medium/Low)
+- ✅ **Target Demographics** profiling (who should buy/rent)
+- ✅ **Selling Points** generation for property showings
+- ✅ **Comparative Intelligence** using 100+ data themes
+- ✅ **Singapore-Specific** (hawker centres, MRT proximity, schools)
+
+**See [SMART_AGENT_GUIDE.md](SMART_AGENT_GUIDE.md) for the complete professional guide!**
 
 ## ⚠️ Authentication Required
 
@@ -18,7 +32,54 @@ A comprehensive Python tool to analyze HDB (Housing & Development Board) houses 
 
 See [AUTHENTICATION.md](AUTHENTICATION.md) for more details.
 
+## 🚀 Quick Start - Smart Agent Mode
+
+For the **smartest, most comprehensive analysis** using ALL 100+ themes:
+
+```bash
+# Install requirements
+pip install -r requirements.txt
+
+# Run with --all-themes for smart agent analysis
+python house_analyzer.py 1.3521 103.8198 --all-themes
+```
+
+You'll get:
+- 🎯 **Livability Score** (0-100 with letter grade)
+- 💡 **Smart Insights** (what agents notice)
+- 👥 **Ideal Demographics** (who should buy this)
+- 🌟 **Key Selling Points** (for showings)
+- 💰 **Investment Rating** (potential & rental appeal)
+- ⚠️  **Risk Factors** (honest concerns)
+
+Example coordinates to try:
+- **Bishan**: `1.3521, 103.8198` (excellent connectivity)
+- **Marina Bay**: `1.2844, 103.8607` (CBD location)
+- **Punggol**: `1.4041, 103.9025` (new town)
+
 ## Features ✨
+
+### 🎯 Smart Property Intelligence
+
+#### Livability Scoring System (0-100 points)
+- **Transport** (25 pts): MRT, bus, expressway access
+- **Education** (20 pts): Schools, childcare, libraries
+- **Healthcare** (15 pts): Hospitals, clinics, pharmacies
+- **Shopping** (20 pts): Hawkers, supermarkets, malls
+- **Recreation** (10 pts): Parks, community clubs, gyms
+- **Safety** (10 pts): Dengue, industrial areas, hazards
+
+#### Smart Insights Generation
+- 🌟 Hidden value factors (e.g., "MRT within 500m = PRIME!")
+- ⚠️  Risk identification (e.g., dengue clusters, noise)
+- ✅ Balanced perspectives (pros AND cons)
+- 🎯 Singapore-specific context (hawker centres valued!)
+
+#### Property Profiling
+- **Target Demographics**: Who should buy/rent
+- **Selling Points**: Ready-made talking points
+- **Investment Potential**: High/Medium/Low rating
+- **Rental Attractiveness**: Market appeal assessment
 
 ### Core Analysis
 - **Address Information**: Reverse geocoding to get detailed address from coordinates
@@ -26,7 +87,7 @@ See [AUTHENTICATION.md](AUTHENTICATION.md) for more details.
 
 ### Two Modes of Operation
 
-#### 1. Standard Mode (Default - Fast & Focused)
+#### 1. Standard Mode (Fast & Focused)
 Uses a curated set of 11 amenity categories:
   - Kindergartens and Childcare Centers
   - Parks and National Parks
@@ -35,8 +96,8 @@ Uses a curated set of 11 amenity categories:
   - Eldercare Centers
   - Plus: MRT stations, bus stops, and major expressways
 
-#### 2. Comprehensive Mode (--all-themes flag)
-Access to **100+ thematic layers** from Onemap API:
+#### 2. Smart Agent Mode (--all-themes flag) ⭐
+Access to **100+ thematic layers** from Onemap API with intelligent analysis:
   - All standard amenities PLUS
   - Dengue clusters
   - CET centres
@@ -44,6 +105,7 @@ Access to **100+ thematic layers** from Onemap API:
   - Educational institutions
   - Sports facilities
   - And many more government-provided datasets
+  - **PLUS**: Livability scoring, insights, and recommendations!
 
 ### Transport & Infrastructure
 - **Public Transport Analysis**:
