@@ -247,6 +247,60 @@ class OneMapAPI:
             print(f"Error in location search: {e}")
             return {}
     
+    def get_nearest_mrt_stops(self, lat: float, lon: float, radius_m: int = 5000) -> List[Dict]:
+        """
+        Get nearest MRT/LRT stations within specified radius using Nearby Services API.
+        
+        Args:
+            lat: Latitude (WGS84 format)
+            lon: Longitude (WGS84 format)
+            radius_m: Search radius in meters (max 5000, default 5000)
+            
+        Returns:
+            List of MRT/LRT stations with id, name, lat, lon, road
+        """
+        url = f"{self.BASE_URL}/public/nearbysvc/getNearestMrtStops"
+        params = {
+            'latitude': lat,
+            'longitude': lon,
+            'radius_in_meters': min(radius_m, 5000)  # Max 5000m per API spec
+        }
+        
+        try:
+            response = self._make_authenticated_request('GET', url, params=params, timeout=10)
+            response.raise_for_status()
+            return response.json()  # Returns list directly
+        except Exception as e:
+            print(f"Error getting nearest MRT stops: {e}")
+            return []
+    
+    def get_nearest_bus_stops(self, lat: float, lon: float, radius_m: int = 1000) -> List[Dict]:
+        """
+        Get nearest bus stops within specified radius using Nearby Services API.
+        
+        Args:
+            lat: Latitude (WGS84 format)
+            lon: Longitude (WGS84 format)
+            radius_m: Search radius in meters (max 5000, default 1000)
+            
+        Returns:
+            List of bus stops with id, name, lat, lon, road
+        """
+        url = f"{self.BASE_URL}/public/nearbysvc/getNearestBusStops"
+        params = {
+            'latitude': lat,
+            'longitude': lon,
+            'radius_in_meters': min(radius_m, 5000)  # Max 5000m per API spec
+        }
+        
+        try:
+            response = self._make_authenticated_request('GET', url, params=params, timeout=10)
+            response.raise_for_status()
+            return response.json()  # Returns list directly
+        except Exception as e:
+            print(f"Error getting nearest bus stops: {e}")
+            return []
+    
     def get_all_themes_info(self, more_info: bool = True) -> List[Dict]:
         """
         Get all available themes from Onemap API.
@@ -554,58 +608,54 @@ class HouseAnalyzer:
         
         results['amenities'] = amenities_data
         
-        # 4. Search for MRT stations
+        # 4. Search for MRT stations using Nearby Services API
         print(f"\n🚇 Searching for nearby MRT stations...")
-        mrt_results = self.api.search_location("MRT")
+        mrt_results = self.api.get_nearest_mrt_stops(latitude, longitude, radius_m=5000)
         mrt_locations = []
         
-        if mrt_results and 'results' in mrt_results:
-            for station in mrt_results['results'][:50]:  # Check more MRT stations
-                try:
-                    station_lat = float(station.get('LATITUDE', 0))
-                    station_lon = float(station.get('LONGITUDE', 0))
-                    distance = self.calculate_distance(latitude, longitude, station_lat, station_lon)
-                    
-                    # Only include MRT stations within 5km
-                    if distance <= 5.0:
-                        mrt_locations.append({
-                            'name': station.get('SEARCHVAL', 'Unknown MRT'),
-                            'address': station.get('ADDRESS', 'N/A'),
-                            'latitude': station_lat,
-                            'longitude': station_lon,
-                            'distance_km': round(distance, 3),
-                            'distance_m': round(distance * 1000, 0)
-                        })
-                except (ValueError, TypeError) as e:
-                    continue
+        for station in mrt_results:
+            try:
+                station_lat = float(station.get('lat', 0))
+                station_lon = float(station.get('lon', 0))
+                distance = self.calculate_distance(latitude, longitude, station_lat, station_lon)
+                
+                mrt_locations.append({
+                    'name': station.get('name', 'Unknown MRT'),
+                    'id': station.get('id', 'N/A'),
+                    'road': station.get('road', 'N/A'),
+                    'latitude': station_lat,
+                    'longitude': station_lon,
+                    'distance_km': round(distance, 3),
+                    'distance_m': round(distance * 1000, 0)
+                })
+            except (ValueError, TypeError) as e:
+                continue
         
         mrt_locations.sort(key=lambda x: x['distance_km'])
         results['public_transport']['mrt_stations'] = mrt_locations[:max_results]
         
-        # 5. Search for bus stops
+        # 5. Search for bus stops using Nearby Services API
         print(f"🚌 Searching for nearby bus stops...")
-        bus_results = self.api.search_location("Bus Stop")
+        bus_results = self.api.get_nearest_bus_stops(latitude, longitude, radius_m=1000)
         bus_locations = []
         
-        if bus_results and 'results' in bus_results:
-            for stop in bus_results['results'][:100]:  # Check many bus stops
-                try:
-                    stop_lat = float(stop.get('LATITUDE', 0))
-                    stop_lon = float(stop.get('LONGITUDE', 0))
-                    distance = self.calculate_distance(latitude, longitude, stop_lat, stop_lon)
-                    
-                    # Only include bus stops within 1km
-                    if distance <= 1.0:
-                        bus_locations.append({
-                            'name': stop.get('SEARCHVAL', 'Unknown Bus Stop'),
-                            'address': stop.get('ADDRESS', 'N/A'),
-                            'latitude': stop_lat,
-                            'longitude': stop_lon,
-                            'distance_km': round(distance, 3),
-                            'distance_m': round(distance * 1000, 0)
-                        })
-                except (ValueError, TypeError) as e:
-                    continue
+        for stop in bus_results:
+            try:
+                stop_lat = float(stop.get('lat', 0))
+                stop_lon = float(stop.get('lon', 0))
+                distance = self.calculate_distance(latitude, longitude, stop_lat, stop_lon)
+                
+                bus_locations.append({
+                    'name': stop.get('name', 'Unknown Bus Stop'),
+                    'id': stop.get('id', 'N/A'),
+                    'road': stop.get('road', 'N/A'),
+                    'latitude': stop_lat,
+                    'longitude': stop_lon,
+                    'distance_km': round(distance, 3),
+                    'distance_m': round(distance * 1000, 0)
+                })
+            except (ValueError, TypeError) as e:
+                continue
         
         bus_locations.sort(key=lambda x: x['distance_km'])
         results['public_transport']['bus_stops'] = bus_locations[:max_results]
