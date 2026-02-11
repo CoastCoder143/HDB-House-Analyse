@@ -1042,6 +1042,130 @@ class HouseAnalyzer:
         with open(filename, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
         print(f"📄 Report saved to: {filename}")
+    
+    def save_report_csv(self, results: Dict, filename: str):
+        """
+        Save analysis results to CSV file.
+        
+        Args:
+            results: Analysis results dictionary
+            filename: Output filename
+        """
+        import csv
+        
+        with open(filename, 'w', encoding='utf-8', newline='') as f:
+            writer = csv.writer(f)
+            
+            # Write header
+            writer.writerow(['Category', 'Name', 'Distance (km)', 'Distance (m)', 'Details'])
+            
+            # Write location info
+            writer.writerow(['Location', results.get('address', 'Unknown'), '', '', 
+                           f"Lat: {results.get('latitude')}, Lon: {results.get('longitude')}"])
+            writer.writerow([])  # Empty row
+            
+            # Write MRT stations
+            writer.writerow(['PUBLIC TRANSPORT - MRT STATIONS'])
+            for mrt in results['public_transport'].get('mrt_stations', []):
+                writer.writerow(['MRT', mrt['name'], f"{mrt['distance_km']:.3f}", 
+                               mrt['distance_m'], mrt.get('id', '')])
+            writer.writerow([])
+            
+            # Write bus stops
+            writer.writerow(['PUBLIC TRANSPORT - BUS STOPS'])
+            for bus in results['public_transport'].get('bus_stops', []):
+                writer.writerow(['Bus Stop', bus['name'], f"{bus['distance_km']:.3f}", 
+                               bus['distance_m'], bus.get('id', '')])
+            writer.writerow([])
+            
+            # Write roads
+            writer.writerow(['ROADS & EXPRESSWAYS'])
+            for road in results['roads'].get('expressways', []):
+                writer.writerow(['Road', road['name'], f"{road['distance_km']:.3f}", 
+                               road['distance_m'], ''])
+            writer.writerow([])
+            
+            # Write amenities
+            for amenity_type, locations in results['amenities'].items():
+                if locations:
+                    writer.writerow([f'AMENITY - {amenity_type.upper().replace("_", " ")}'])
+                    for loc in locations:
+                        writer.writerow([amenity_type, loc['name'], f"{loc['distance_km']:.3f}", 
+                                       loc['distance_m'], loc.get('address', '')])
+                    writer.writerow([])
+            
+        print(f"📊 CSV report saved to: {filename}")
+    
+    def save_report_markdown(self, results: Dict, filename: str):
+        """
+        Save analysis results to Markdown file.
+        
+        Args:
+            results: Analysis results dictionary
+            filename: Output filename
+        """
+        with open(filename, 'w', encoding='utf-8') as f:
+            # Title
+            f.write("# 🏠 HDB House Analysis Report\n\n")
+            f.write(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            
+            # Location
+            f.write("## 📍 Location Information\n\n")
+            f.write(f"**Address:** {results.get('address', 'Unknown')}\n\n")
+            f.write(f"**Coordinates:** {results.get('latitude')}, {results.get('longitude')}\n\n")
+            if results.get('planning_area'):
+                f.write(f"**Planning Area:** {results['planning_area'].get('pln_area_n', 'Unknown')}\n\n")
+            
+            # Summary
+            if 'summary' in results:
+                f.write("## 📊 Summary\n\n")
+                summary = results['summary']
+                f.write(f"- **Total Amenities Found:** {summary.get('total_amenities_found', 0)}\n")
+                if summary.get('nearest_mrt'):
+                    mrt = summary['nearest_mrt']
+                    f.write(f"- **Nearest MRT:** {mrt['name']} ({mrt['distance_km']:.2f} km)\n")
+                if summary.get('nearest_bus_stop'):
+                    bus = summary['nearest_bus_stop']
+                    f.write(f"- **Nearest Bus Stop:** {bus['name']} ({bus['distance_km']:.2f} km)\n")
+                f.write("\n")
+            
+            # Public Transport
+            f.write("## 🚇🚌 Public Transport\n\n")
+            f.write("### MRT Stations\n\n")
+            f.write("| Name | Distance | ID |\n")
+            f.write("|------|----------|----|\n")
+            for mrt in results['public_transport'].get('mrt_stations', [])[:10]:
+                f.write(f"| {mrt['name']} | {mrt['distance_km']:.2f} km | {mrt.get('id', 'N/A')} |\n")
+            f.write("\n")
+            
+            f.write("### Bus Stops\n\n")
+            f.write("| Name | Distance | ID |\n")
+            f.write("|------|----------|----|\n")
+            for bus in results['public_transport'].get('bus_stops', [])[:10]:
+                f.write(f"| {bus['name']} | {bus['distance_km']:.2f} km | {bus.get('id', 'N/A')} |\n")
+            f.write("\n")
+            
+            # Roads
+            f.write("## 🛣️ Roads & Expressways\n\n")
+            f.write("| Name | Distance |\n")
+            f.write("|------|----------|\n")
+            for road in results['roads'].get('expressways', [])[:10]:
+                f.write(f"| {road['name']} | {road['distance_km']:.2f} km |\n")
+            f.write("\n")
+            
+            # Amenities
+            f.write("## 🏢 Nearby Amenities\n\n")
+            for amenity_type, locations in results['amenities'].items():
+                if locations:
+                    f.write(f"### {amenity_type.replace('_', ' ').title()}\n\n")
+                    f.write("| Name | Distance | Address |\n")
+                    f.write("|------|----------|----------|\n")
+                    for loc in locations[:10]:
+                        address = loc.get('address', 'N/A')
+                        f.write(f"| {loc['name']} | {loc['distance_km']:.2f} km | {address} |\n")
+                    f.write("\n")
+            
+        print(f"📝 Markdown report saved to: {filename}")
 
 
 def main():
@@ -1057,6 +1181,9 @@ Examples:
   python house_analyzer.py 1.3521 103.8198 --all-themes
   python house_analyzer.py 1.3521 103.8198 --radius 10
   python house_analyzer.py 1.3521 103.8198 --token "eyJhbGc..."
+  python house_analyzer.py 1.3521 103.8198 --output report.json
+  python house_analyzer.py 1.3521 103.8198 --output report.csv --format csv
+  python house_analyzer.py 1.3521 103.8198 --output report.md --format markdown
         """
     )
     parser.add_argument('latitude', type=float, nargs='?', help='Latitude of the house')
@@ -1069,6 +1196,13 @@ Examples:
                        help='Maximum results per category (default: 10)')
     parser.add_argument('--token', type=str, default=None,
                        help='Pre-obtained Onemap API access token (skips authentication)')
+    parser.add_argument('--output', '-o', type=str, default=None,
+                       help='Output file path (auto-generates if not specified)')
+    parser.add_argument('--format', '-f', type=str, default='json',
+                       choices=['json', 'csv', 'markdown', 'md', 'all'],
+                       help='Output format: json, csv, markdown/md, or all (default: json)')
+    parser.add_argument('--no-interactive', action='store_true',
+                       help='Disable interactive prompts (automatically saves output)')
     
     args = parser.parse_args()
     
@@ -1173,15 +1307,101 @@ Examples:
     # Print detailed report
     analyzer.print_detailed_report(results)
     
-    # Ask if user wants to save the report
-    save_report = input("\nDo you want to save the report as JSON? (y/n): ")
-    if save_report.lower() == 'y':
-        filename = input("Enter filename (default: house_analysis_report.json): ").strip()
-        if not filename:
-            filename = "house_analysis_report.json"
-        if not filename.endswith('.json'):
-            filename += '.json'
-        analyzer.save_report_json(results, filename)
+    # Handle output file generation
+    output_file = args.output
+    output_format = args.format
+    
+    # Auto-generate filename if output requested but no filename specified
+    if args.no_interactive or output_file:
+        if not output_file:
+            # Generate timestamp-based filename
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            lat_str = f"{latitude:.4f}".replace('.', '_')
+            lon_str = f"{longitude:.4f}".replace('.', '_')
+            base_name = f"house_analysis_{lat_str}_{lon_str}_{timestamp}"
+            
+            if output_format == 'all':
+                output_file = base_name  # Base name for multiple files
+            elif output_format in ['markdown', 'md']:
+                output_file = f"{base_name}.md"
+            elif output_format == 'csv':
+                output_file = f"{base_name}.csv"
+            else:  # json
+                output_file = f"{base_name}.json"
+        
+        print(f"\n💾 Saving analysis results...")
+        print("=" * 80)
+        
+        # Save in requested format(s)
+        if output_format == 'all':
+            # Save in all formats
+            base = output_file.rsplit('.', 1)[0] if '.' in output_file else output_file
+            analyzer.save_report_json(results, f"{base}.json")
+            analyzer.save_report_csv(results, f"{base}.csv")
+            analyzer.save_report_markdown(results, f"{base}.md")
+        elif output_format in ['markdown', 'md']:
+            if not output_file.endswith('.md'):
+                output_file = output_file.rsplit('.', 1)[0] + '.md'
+            analyzer.save_report_markdown(results, output_file)
+        elif output_format == 'csv':
+            if not output_file.endswith('.csv'):
+                output_file = output_file.rsplit('.', 1)[0] + '.csv'
+            analyzer.save_report_csv(results, output_file)
+        else:  # json (default)
+            if not output_file.endswith('.json'):
+                output_file = output_file.rsplit('.', 1)[0] + '.json'
+            analyzer.save_report_json(results, output_file)
+        
+        print("=" * 80)
+    else:
+        # Interactive mode - ask if user wants to save
+        save_report = input("\n💾 Do you want to save the report? (y/n): ")
+        if save_report.lower() == 'y':
+            # Ask for format
+            print("\nAvailable formats:")
+            print("  1. JSON (complete data structure)")
+            print("  2. CSV (tabular format)")
+            print("  3. Markdown (formatted report)")
+            print("  4. All formats")
+            format_choice = input("Choose format (1-4, default=1): ").strip() or '1'
+            
+            format_map = {
+                '1': 'json',
+                '2': 'csv',
+                '3': 'markdown',
+                '4': 'all'
+            }
+            output_format = format_map.get(format_choice, 'json')
+            
+            filename = input("Enter filename (or press Enter for auto-generated): ").strip()
+            if not filename:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                lat_str = f"{latitude:.4f}".replace('.', '_')
+                lon_str = f"{longitude:.4f}".replace('.', '_')
+                filename = f"house_analysis_{lat_str}_{lon_str}_{timestamp}"
+            
+            print(f"\n💾 Saving analysis results...")
+            print("=" * 80)
+            
+            if output_format == 'all':
+                base = filename.rsplit('.', 1)[0] if '.' in filename else filename
+                analyzer.save_report_json(results, f"{base}.json")
+                analyzer.save_report_csv(results, f"{base}.csv")
+                analyzer.save_report_markdown(results, f"{base}.md")
+            elif output_format == 'markdown':
+                if not filename.endswith('.md'):
+                    filename += '.md'
+                analyzer.save_report_markdown(results, filename)
+            elif output_format == 'csv':
+                if not filename.endswith('.csv'):
+                    filename += '.csv'
+                analyzer.save_report_csv(results, filename)
+            else:  # json
+                if not filename.endswith('.json'):
+                    filename += '.json'
+                analyzer.save_report_json(results, filename)
+            
+            print("=" * 80)
     
     print("\n✅ Analysis complete!")
 
