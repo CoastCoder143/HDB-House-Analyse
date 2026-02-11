@@ -58,13 +58,16 @@ class OneMapAPI:
         'registered_schools': 'registeredschools'
     }
     
-    def __init__(self, email: Optional[str] = None, password: Optional[str] = None):
+    def __init__(self, email: Optional[str] = None, password: Optional[str] = None, 
+                 access_token: Optional[str] = None):
         """
         Initialize the Onemap API client.
         
         Args:
             email: Onemap API email (optional, can be set via environment variable ONEMAP_EMAIL)
             password: Onemap API password (optional, can be set via environment variable ONEMAP_PASSWORD)
+            access_token: Pre-obtained access token (optional, can be set via environment variable ONEMAP_TOKEN)
+                         If provided, skips authentication step
         """
         self.session = requests.Session()
         self.session.headers.update({
@@ -75,12 +78,23 @@ class OneMapAPI:
         self.email = email or os.getenv('ONEMAP_EMAIL')
         self.password = password or os.getenv('ONEMAP_PASSWORD')
         
+        # Check for pre-obtained token
+        provided_token = access_token or os.getenv('ONEMAP_TOKEN')
+        
         self.access_token = None
         self.token_expiry = None
         self.available_themes = None  # Cache for available themes
         
-        # Try to authenticate if credentials are provided
-        if self.email and self.password:
+        # If token provided, use it directly (skip authentication)
+        if provided_token:
+            self.access_token = provided_token
+            # Set expiry to 3 days from now (default token validity)
+            self.token_expiry = datetime.now() + timedelta(days=3)
+            self.session.headers.update({
+                'Authorization': self.access_token
+            })
+        # Otherwise, try to authenticate if credentials are provided
+        elif self.email and self.password:
             self._authenticate()
     
     def _authenticate(self) -> bool:
@@ -389,15 +403,17 @@ class OneMapAPI:
 class HouseAnalyzer:
     """Main class for analyzing house locations."""
     
-    def __init__(self, email: Optional[str] = None, password: Optional[str] = None):
+    def __init__(self, email: Optional[str] = None, password: Optional[str] = None, 
+                 access_token: Optional[str] = None):
         """
         Initialize the house analyzer.
         
         Args:
             email: Onemap API email (optional)
             password: Onemap API password (optional)
+            access_token: Pre-obtained access token (optional)
         """
-        self.api = OneMapAPI(email=email, password=password)
+        self.api = OneMapAPI(email=email, password=password, access_token=access_token)
     
     @staticmethod
     def calculate_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -764,6 +780,7 @@ Examples:
   python house_analyzer.py 1.3521 103.8198
   python house_analyzer.py 1.3521 103.8198 --all-themes
   python house_analyzer.py 1.3521 103.8198 --radius 10
+  python house_analyzer.py 1.3521 103.8198 --token "eyJhbGc..."
         """
     )
     parser.add_argument('latitude', type=float, nargs='?', help='Latitude of the house')
@@ -774,6 +791,8 @@ Examples:
                        help='Search radius in kilometers (default: 5.0)')
     parser.add_argument('--max-results', type=int, default=10,
                        help='Maximum results per category (default: 10)')
+    parser.add_argument('--token', type=str, default=None,
+                       help='Pre-obtained Onemap API access token (skips authentication)')
     
     args = parser.parse_args()
     
@@ -781,36 +800,57 @@ Examples:
     print("HDB HOUSE ANALYZER - Using Onemap API")
     print("="*80)
     
-    # Check for API credentials
+    # Check for pre-obtained token first
+    token = args.token or os.getenv('ONEMAP_TOKEN')
+    
+    # Only prompt for credentials if no token provided
     email = os.getenv('ONEMAP_EMAIL')
     password = os.getenv('ONEMAP_PASSWORD')
     
-    if not email or not password:
+    if not token and (not email or not password):
         print("\n🔐 Onemap API Authentication Required")
         print("-" * 80)
         print("The Onemap API requires authentication to access data.")
         print("If you don't have an account, register for FREE at:")
         print("https://www.onemap.gov.sg/apidocs/register")
         print("-" * 80)
+        print("\nYou can authenticate in two ways:")
+        print("1. Email & Password (recommended)")
+        print("2. Pre-obtained access token (advanced)")
+        print("-" * 80)
         
         # Prompt for credentials
         try:
             if not email:
-                email = input("\nEnter your Onemap email: ").strip()
-            if not password:
-                print("\n💡 Note: Your password will be hidden as you type (no characters will appear).")
-                print("   This is normal for security. Just type your password and press Enter.")
-                password = getpass.getpass("\nEnter your Onemap password: ").strip()
+                email = input("\nEnter your Onemap email (or press Enter to use token): ").strip()
             
-            if not email or not password:
-                print("\n❌ Error: Email and password are required!")
-                print("Please register at: https://www.onemap.gov.sg/apidocs/register")
-                sys.exit(1)
+            # If user chose token option
+            if not email:
+                token = input("Enter your access token: ").strip()
+                if not token:
+                    print("\n❌ Error: Either email/password or token is required!")
+                    print("Please register at: https://www.onemap.gov.sg/apidocs/register")
+                    sys.exit(1)
+            else:
+                # Get password
+                if not password:
+                    print("\n💡 Note: Your password will be hidden as you type (no characters will appear).")
+                    print("   This is normal for security. Just type your password and press Enter.")
+                    password = getpass.getpass("\nEnter your Onemap password: ").strip()
                 
-            print("\n✓ Credentials received. Authenticating...")
+                if not email or not password:
+                    print("\n❌ Error: Email and password are required!")
+                    print("Please register at: https://www.onemap.gov.sg/apidocs/register")
+                    sys.exit(1)
+                    
+                print("\n✓ Credentials received. Authenticating...")
         except KeyboardInterrupt:
             print("\n\n❌ Authentication cancelled by user.")
             sys.exit(1)
+    elif token:
+        print("\n✓ Using pre-obtained access token...")
+    else:
+        print("\n✓ Credentials found. Authenticating...")
     
     # Get user input
     if args.latitude is not None and args.longitude is not None:
@@ -843,8 +883,8 @@ Examples:
     print(f"   Search radius: {args.radius} km")
     print(f"   Max results per category: {args.max_results}")
     
-    # Perform analysis with credentials
-    analyzer = HouseAnalyzer(email=email, password=password)
+    # Perform analysis with credentials or token
+    analyzer = HouseAnalyzer(email=email, password=password, access_token=token)
     results = analyzer.analyze_house(latitude, longitude, 
                                      max_results=args.max_results,
                                      use_all_themes=args.all_themes,
