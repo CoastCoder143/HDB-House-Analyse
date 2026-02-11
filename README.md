@@ -20,19 +20,32 @@ See [AUTHENTICATION.md](AUTHENTICATION.md) for more details.
 
 ## Features ✨
 
+### Core Analysis
 - **Address Information**: Reverse geocoding to get detailed address from coordinates
 - **Planning Area Details**: Get planning area and location information
-- **Comprehensive Amenity Search**:
+
+### Two Modes of Operation
+
+#### 1. Standard Mode (Default - Fast & Focused)
+Uses a curated set of 11 amenity categories:
   - Kindergartens and Childcare Centers
   - Parks and National Parks
-  - Gyms and Fitness Centers
-  - Hawker Centres
-  - Supermarkets
-  - Pharmacies
   - Libraries
   - Community Clubs
   - Eldercare Centers
-  - Registered Schools
+  - Plus: MRT stations, bus stops, and major expressways
+
+#### 2. Comprehensive Mode (--all-themes flag)
+Access to **100+ thematic layers** from Onemap API:
+  - All standard amenities PLUS
+  - Dengue clusters
+  - CET centres
+  - Healthcare facilities
+  - Educational institutions
+  - Sports facilities
+  - And many more government-provided datasets
+
+### Transport & Infrastructure
 - **Public Transport Analysis**:
   - Nearby MRT stations (within 5km)
   - Nearby bus stops (within 1km)
@@ -48,6 +61,8 @@ See [AUTHENTICATION.md](AUTHENTICATION.md) for more details.
   - TPE (Tampines Expressway)
   - MCE (Marina Coastal Expressway)
   - KJE (Kranji Expressway)
+- **Configurable Search Radius**: Customize the search area (default: 5km)
+
 - **Distance Calculations**: Haversine formula for accurate distance measurements
 - **Detailed Reporting**: Comprehensive analysis with sorting by distance
 - **JSON Export**: Save full analysis report in JSON format
@@ -125,8 +140,34 @@ Longitude: 103.8198
 Provide coordinates directly as command line arguments:
 
 ```bash
+# Standard mode (fast, curated categories)
 python house_analyzer.py 1.3521 103.8198
+
+# Comprehensive mode (100+ theme categories)
+python house_analyzer.py 1.3521 103.8198 --all-themes
+
+# Custom search radius (10km instead of default 5km)
+python house_analyzer.py 1.3521 103.8198 --radius 10
+
+# More results per category (20 instead of default 10)
+python house_analyzer.py 1.3521 103.8198 --max-results 20
+
+# Combine options
+python house_analyzer.py 1.3521 103.8198 --all-themes --radius 7.5 --max-results 15
 ```
+
+### Command Line Options
+
+- `--all-themes`: Use ALL 100+ available themes from Onemap API (comprehensive but slower)
+- `--radius KILOMETERS`: Set search radius in kilometers (default: 5.0)
+- `--max-results NUMBER`: Maximum results per category (default: 10)
+- `-h, --help`: Show help message
+
+**Note**: The `--all-themes` flag will:
+- Fetch all available themes dynamically from the Onemap API
+- Provide access to 100+ data categories
+- Take longer to run (more API calls)
+- Give you the most comprehensive analysis possible
 
 Note: You'll still be prompted for credentials if they're not in environment variables.
 

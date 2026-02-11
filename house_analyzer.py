@@ -77,6 +77,7 @@ class OneMapAPI:
         
         self.access_token = None
         self.token_expiry = None
+        self.available_themes = None  # Cache for available themes
         
         # Try to authenticate if credentials are provided
         if self.email and self.password:
@@ -224,24 +225,84 @@ class OneMapAPI:
             print(f"Error in location search: {e}")
             return {}
     
-    def get_theme_data(self, query_name: str, lat: float, lon: float) -> List[Dict]:
+    def get_all_themes_info(self, more_info: bool = True) -> List[Dict]:
+        """
+        Get all available themes from Onemap API.
+        
+        Args:
+            more_info: If True, returns detailed info about each theme
+            
+        Returns:
+            List of theme information dictionaries
+        """
+        url = f"{self.BASE_URL}/public/themesvc/getAllThemesInfo"
+        params = {'moreInfo': 'Y' if more_info else 'N'}
+        
+        try:
+            response = self._make_authenticated_request('GET', url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            if 'Theme_Names' in data:
+                self.available_themes = data['Theme_Names']
+                return data['Theme_Names']
+            return []
+        except Exception as e:
+            print(f"Error getting themes info: {e}")
+            return []
+    
+    def calculate_extents(self, lat: float, lon: float, radius_km: float = 5.0) -> str:
+        """
+        Calculate extents (bounding box) around a point.
+        
+        Args:
+            lat: Center latitude
+            lon: Center longitude
+            radius_km: Radius in kilometers for the bounding box
+            
+        Returns:
+            Extents string in format: "lat_min,lng_min,lat_max,lng_max"
+        """
+        # Approximate degrees per km (works for Singapore's latitude)
+        # 1 degree latitude ≈ 111 km
+        # 1 degree longitude ≈ 111 km * cos(latitude)
+        import math
+        
+        lat_delta = radius_km / 111.0
+        lon_delta = radius_km / (111.0 * math.cos(math.radians(lat)))
+        
+        lat_min = lat - lat_delta
+        lat_max = lat + lat_delta
+        lon_min = lon - lon_delta
+        lon_max = lon + lon_delta
+        
+        return f"{lat_min},{lon_min},{lat_max},{lon_max}"
+    
+    def get_theme_data(self, query_name: str, lat: float = None, lon: float = None, 
+                       extents: str = None, radius_km: float = 5.0) -> List[Dict]:
         """
         Get themed data (amenities) near a location.
         
         Args:
             query_name: Theme name (e.g., 'kindergartens', 'parks')
-            lat: Latitude
-            lon: Longitude
+            lat: Latitude (optional if extents provided)
+            lon: Longitude (optional if extents provided)
+            extents: Boundary box as "lat_min,lng_min,lat_max,lng_max" (optional)
+            radius_km: Radius for calculating extents if lat/lon provided (default 5km)
             
         Returns:
             List of amenities
         """
         url = f"{self.BASE_URL}/public/themesvc/retrieveTheme"
-        params = {
-            'queryName': query_name,
-            'lat': lat,
-            'lng': lon
-        }
+        params = {'queryName': query_name}
+        
+        # Use extents if provided, otherwise calculate from lat/lon
+        if extents:
+            params['extents'] = extents
+        elif lat is not None and lon is not None:
+            params['extents'] = self.calculate_extents(lat, lon, radius_km)
+        else:
+            raise ValueError("Either extents or lat/lon must be provided")
         
         try:
             response = self._make_authenticated_request('GET', url, params=params, timeout=10)
@@ -365,7 +426,8 @@ class HouseAnalyzer:
         
         return R * c
     
-    def analyze_house(self, latitude: float, longitude: float, max_results: int = 10) -> Dict:
+    def analyze_house(self, latitude: float, longitude: float, max_results: int = 10, 
+                      use_all_themes: bool = False, search_radius_km: float = 5.0) -> Dict:
         """
         Perform comprehensive analysis of a house location.
         
@@ -373,6 +435,8 @@ class HouseAnalyzer:
             latitude: House latitude
             longitude: House longitude
             max_results: Maximum number of results per category
+            use_all_themes: If True, fetch and use all available themes from API (100+)
+            search_radius_km: Search radius in kilometers for extents calculation
             
         Returns:
             Dictionary containing all analysis results
@@ -420,9 +484,23 @@ class HouseAnalyzer:
         print(f"\n🏢 Analyzing nearby amenities...")
         amenities_data = {}
         
-        for amenity_name, theme_code in self.api.THEMES.items():
+        # Determine which themes to use
+        if use_all_themes:
+            print("   Fetching all available themes from Onemap API...")
+            all_themes = self.api.get_all_themes_info(more_info=True)
+            if all_themes:
+                print(f"   Found {len(all_themes)} available themes!")
+                themes_to_search = {theme['QUERYNAME']: theme['QUERYNAME'] for theme in all_themes}
+            else:
+                print("   Could not fetch themes, using default set")
+                themes_to_search = self.api.THEMES
+        else:
+            themes_to_search = self.api.THEMES
+        
+        for amenity_name, theme_code in themes_to_search.items():
             print(f"   Searching for {amenity_name.replace('_', ' ').title()}...")
-            theme_results = self.api.get_theme_data(theme_code, latitude, longitude)
+            theme_results = self.api.get_theme_data(theme_code, lat=latitude, lon=longitude, 
+                                                    radius_km=search_radius_km)
             
             locations = []
             for item in theme_results[:max_results]:
@@ -446,7 +524,8 @@ class HouseAnalyzer:
             
             # Sort by distance
             locations.sort(key=lambda x: x['distance_km'])
-            amenities_data[amenity_name] = locations
+            if locations:  # Only add if we found results
+                amenities_data[amenity_name] = locations
         
         results['amenities'] = amenities_data
         
@@ -675,6 +754,29 @@ class HouseAnalyzer:
 
 def main():
     """Main function to run the house analyzer."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description='HDB House Analyzer using Onemap API',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python house_analyzer.py 1.3521 103.8198
+  python house_analyzer.py 1.3521 103.8198 --all-themes
+  python house_analyzer.py 1.3521 103.8198 --radius 10
+        """
+    )
+    parser.add_argument('latitude', type=float, nargs='?', help='Latitude of the house')
+    parser.add_argument('longitude', type=float, nargs='?', help='Longitude of the house')
+    parser.add_argument('--all-themes', action='store_true', 
+                       help='Use all 100+ available themes from Onemap API (slower but more comprehensive)')
+    parser.add_argument('--radius', type=float, default=5.0, 
+                       help='Search radius in kilometers (default: 5.0)')
+    parser.add_argument('--max-results', type=int, default=10,
+                       help='Maximum results per category (default: 10)')
+    
+    args = parser.parse_args()
+    
     print("="*80)
     print("HDB HOUSE ANALYZER - Using Onemap API")
     print("="*80)
@@ -711,14 +813,9 @@ def main():
             sys.exit(1)
     
     # Get user input
-    if len(sys.argv) >= 3:
-        try:
-            latitude = float(sys.argv[1])
-            longitude = float(sys.argv[2])
-        except ValueError:
-            print("Error: Invalid coordinates provided")
-            print("Usage: python house_analyzer.py <latitude> <longitude>")
-            sys.exit(1)
+    if args.latitude is not None and args.longitude is not None:
+        latitude = args.latitude
+        longitude = args.longitude
     else:
         print("\nPlease enter the house coordinates:")
         try:
@@ -735,9 +832,23 @@ def main():
         if response.lower() != 'y':
             sys.exit(0)
     
+    # Show analysis mode
+    if args.all_themes:
+        print(f"\n🌟 Using ALL available themes from Onemap API (100+ categories)")
+        print(f"   This will take longer but provide more comprehensive data.")
+    else:
+        print(f"\n📋 Using curated theme categories (faster, focused results)")
+        print(f"   Use --all-themes flag to access 100+ theme categories")
+    
+    print(f"   Search radius: {args.radius} km")
+    print(f"   Max results per category: {args.max_results}")
+    
     # Perform analysis with credentials
     analyzer = HouseAnalyzer(email=email, password=password)
-    results = analyzer.analyze_house(latitude, longitude, max_results=10)
+    results = analyzer.analyze_house(latitude, longitude, 
+                                     max_results=args.max_results,
+                                     use_all_themes=args.all_themes,
+                                     search_radius_km=args.radius)
     
     # Print detailed report
     analyzer.print_detailed_report(results)
