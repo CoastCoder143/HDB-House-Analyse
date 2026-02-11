@@ -101,17 +101,21 @@ class PropertyInsights:
         """
         scores = {
             'overall': 0,
-            'transport': 0,
+            'public_transport': 0,
             'education': 0,
             'healthcare': 0,
             'shopping': 0,
             'recreation': 0,
             'safety': 0,
+            'roads': 0,
             'breakdown': {}
         }
         
-        # Transport score (25 points max)
-        scores['transport'] = self._calculate_transport_score(results)
+        # Public transport score (20 points max)
+        scores['public_transport'] = self._calculate_public_transport_score(results)
+        
+        # Roads & access score (5 points max)
+        scores['roads'] = self._calculate_roads_score(results)
         
         # Education score (20 points max)
         scores['education'] = self._calculate_education_score(results)
@@ -130,22 +134,23 @@ class PropertyInsights:
         
         # Calculate overall (sum of categories)
         scores['overall'] = min(100, sum([
-            scores['transport'],
+            scores['public_transport'],
             scores['education'],
             scores['healthcare'],
             scores['shopping'],
             scores['recreation'],
-            scores['safety']
+            scores['safety'],
+            scores['roads']
         ]))
         
         return scores
     
-    def _calculate_transport_score(self, results: Dict) -> float:
-        """Calculate transport accessibility score (0-25)."""
+    def _calculate_public_transport_score(self, results: Dict) -> float:
+        """Calculate public transport accessibility score (0-20)."""
         score = 0
         
         # MRT within walking distance (15 points)
-        mrt_stations = results.get('transport', {}).get('mrt_stations', [])
+        mrt_stations = results.get('public_transport', {}).get('mrt_stations', [])
         if mrt_stations:
             nearest_mrt = mrt_stations[0]['distance_km']
             if nearest_mrt <= 0.5:
@@ -157,27 +162,35 @@ class PropertyInsights:
             elif nearest_mrt <= 3.0:
                 score += 5
         
-        # Bus stops (7 points)
-        bus_stops = results.get('transport', {}).get('bus_stops', [])
+        # Bus stops (5 points)
+        bus_stops = results.get('public_transport', {}).get('bus_stops', [])
         if bus_stops:
             nearest_bus = bus_stops[0]['distance_km']
             if nearest_bus <= 0.3:
-                score += 7
-            elif nearest_bus <= 0.5:
                 score += 5
+            elif nearest_bus <= 0.5:
+                score += 4
             elif nearest_bus <= 1.0:
-                score += 3
+                score += 2
         
-        # Not too close to expressway (noise) (3 points)
-        roads = results.get('transport', {}).get('major_roads', [])
+        return score
+    
+    def _calculate_roads_score(self, results: Dict) -> float:
+        """Calculate roads and access score (0-5)."""
+        score = 0
+        
+        # Not too close to expressway (noise concern) but not too far (access)
+        roads = results.get('roads', {}).get('expressways', [])
         if roads:
             nearest_road = roads[0]['distance_km']
-            if nearest_road >= 0.5:  # Good distance
+            if 0.5 <= nearest_road <= 2.0:  # Sweet spot - accessible but not noisy
+                score += 5
+            elif 0.3 <= nearest_road < 0.5:  # Close but manageable
                 score += 3
-            elif nearest_road >= 0.3:
+            elif nearest_road >= 2.0:  # Far but still accessible
                 score += 2
         else:
-            score += 3  # No major roads nearby is good
+            score += 4  # No major roads nearby is generally good (less noise)
         
         return score
     
@@ -365,10 +378,11 @@ class PropertyInsights:
         """
         insights = []
         amenities = results.get('amenities', {})
-        transport = results.get('transport', {})
+        public_transport = results.get('public_transport', {})
+        roads = results.get('roads', {})
         
-        # Transport insights
-        mrt_stations = transport.get('mrt_stations', [])
+        # Public Transport insights
+        mrt_stations = public_transport.get('mrt_stations', [])
         if mrt_stations:
             nearest_mrt = mrt_stations[0]
             if nearest_mrt['distance_km'] <= 0.5:
@@ -410,9 +424,9 @@ class PropertyInsights:
             insights.append(f"⚠️  **ALERT**: Dengue cluster within 1km - consider mosquito prevention measures")
         
         # Major roads proximity
-        roads = transport.get('major_roads', [])
-        if roads:
-            nearest_road = roads[0]
+        expressways = roads.get('expressways', [])
+        if expressways:
+            nearest_road = expressways[0]
             if nearest_road['distance_km'] <= 0.2:
                 insights.append(f"🔊 **NOISE CONCERN**: Expressway within 200m - potential noise pollution issue")
             elif nearest_road['distance_km'] >= 0.5 and nearest_road['distance_km'] <= 1.5:
@@ -451,12 +465,12 @@ class PropertyInsights:
         }
         
         amenities = results.get('amenities', {})
-        transport = results.get('transport', {})
+        public_transport = results.get('public_transport', {})
         
         # Determine ideal demographics
         if scores['education'] >= 15:
             profile['ideal_for'].append('Families with school-age children')
-        if scores['transport'] >= 20:
+        if scores['public_transport'] >= 15:
             profile['ideal_for'].append('Working professionals (easy commute)')
         if scores['recreation'] >= 7:
             profile['ideal_for'].append('Active lifestyle seekers')
@@ -466,7 +480,7 @@ class PropertyInsights:
             profile['ideal_for'].append('Premium property investors')
         
         # Selling points
-        mrt_stations = transport.get('mrt_stations', [])
+        mrt_stations = public_transport.get('mrt_stations', [])
         if mrt_stations and mrt_stations[0]['distance_km'] <= 0.5:
             profile['selling_points'].append('MRT within 500m - premium transport connectivity')
         if scores['education'] >= 15:
@@ -477,7 +491,7 @@ class PropertyInsights:
             profile['selling_points'].append('Good recreation facilities - quality lifestyle')
         
         # Concerns
-        if scores['transport'] < 10:
+        if scores['public_transport'] < 10:
             profile['concerns'].append('Limited public transport - car dependency')
         if scores['education'] < 10:
             profile['concerns'].append('Few schools nearby - may not suit families')
@@ -485,7 +499,7 @@ class PropertyInsights:
             profile['concerns'].append('Limited shopping options - less convenient')
         
         # Investment potential
-        if scores['overall'] >= 80 and scores['transport'] >= 20:
+        if scores['overall'] >= 80 and scores['public_transport'] >= 15:
             profile['investment_potential'] = 'High'
             profile['rental_attractiveness'] = 'High'
         elif scores['overall'] >= 60:

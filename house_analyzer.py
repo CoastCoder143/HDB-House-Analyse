@@ -470,7 +470,8 @@ class HouseAnalyzer:
             'address': {},
             'planning_area': {},
             'amenities': {},
-            'transport': {},
+            'public_transport': {},
+            'roads': {},
             'summary': {}
         }
         
@@ -579,7 +580,7 @@ class HouseAnalyzer:
                     continue
         
         mrt_locations.sort(key=lambda x: x['distance_km'])
-        results['transport']['mrt_stations'] = mrt_locations[:max_results]
+        results['public_transport']['mrt_stations'] = mrt_locations[:max_results]
         
         # 5. Search for bus stops
         print(f"🚌 Searching for nearby bus stops...")
@@ -607,7 +608,7 @@ class HouseAnalyzer:
                     continue
         
         bus_locations.sort(key=lambda x: x['distance_km'])
-        results['transport']['bus_stops'] = bus_locations[:max_results]
+        results['public_transport']['bus_stops'] = bus_locations[:max_results]
         
         # 6. Search for major roads and expressways
         print(f"🛣️  Searching for major roads and expressways...")
@@ -636,7 +637,7 @@ class HouseAnalyzer:
                         continue
         
         road_locations.sort(key=lambda x: x['distance_km'])
-        results['transport']['major_roads'] = road_locations[:10]
+        results['roads']['expressways'] = road_locations[:10]
         
         # Generate summary statistics
         results['summary'] = self._generate_summary(results)
@@ -677,14 +678,14 @@ class HouseAnalyzer:
                 }
         
         # Nearest transport
-        if results['transport'].get('mrt_stations'):
-            summary['nearest_mrt'] = results['transport']['mrt_stations'][0]
+        if results['public_transport'].get('mrt_stations'):
+            summary['nearest_mrt'] = results['public_transport']['mrt_stations'][0]
         
-        if results['transport'].get('bus_stops'):
-            summary['nearest_bus_stop'] = results['transport']['bus_stops'][0]
+        if results['public_transport'].get('bus_stops'):
+            summary['nearest_bus_stop'] = results['public_transport']['bus_stops'][0]
         
-        if results['transport'].get('major_roads'):
-            summary['nearest_major_road'] = results['transport']['major_roads'][0]
+        if results['roads'].get('expressways'):
+            summary['nearest_major_road'] = results['roads']['expressways'][0]
         
         return summary
     
@@ -715,12 +716,13 @@ class HouseAnalyzer:
             
             print(f"\n{emoji} OVERALL LIVABILITY SCORE: {overall_score:.1f}/100 (Grade: {grade})")
             print(f"\nScore Breakdown:")
-            print(f"  🚇 Transport:    {scores['transport']:.1f}/25  {insights_engine.get_score_emoji(scores['transport']*4)}")
-            print(f"  🎓 Education:    {scores['education']:.1f}/20  {insights_engine.get_score_emoji(scores['education']*5)}")
-            print(f"  🏥 Healthcare:   {scores['healthcare']:.1f}/15  {insights_engine.get_score_emoji(scores['healthcare']*6.67)}")
-            print(f"  🛒 Shopping:     {scores['shopping']:.1f}/20  {insights_engine.get_score_emoji(scores['shopping']*5)}")
-            print(f"  🌳 Recreation:   {scores['recreation']:.1f}/10  {insights_engine.get_score_emoji(scores['recreation']*10)}")
-            print(f"  🛡️  Safety:       {scores['safety']:.1f}/10  {insights_engine.get_score_emoji(scores['safety']*10)}")
+            print(f"  🚇🚌 Public Transport: {scores['public_transport']:.1f}/20  {insights_engine.get_score_emoji(scores['public_transport']*5)}")
+            print(f"  🎓 Education:         {scores['education']:.1f}/20  {insights_engine.get_score_emoji(scores['education']*5)}")
+            print(f"  🏥 Healthcare:        {scores['healthcare']:.1f}/15  {insights_engine.get_score_emoji(scores['healthcare']*6.67)}")
+            print(f"  🛒 Shopping:          {scores['shopping']:.1f}/20  {insights_engine.get_score_emoji(scores['shopping']*5)}")
+            print(f"  🌳 Recreation:        {scores['recreation']:.1f}/10  {insights_engine.get_score_emoji(scores['recreation']*10)}")
+            print(f"  🛡️  Safety:            {scores['safety']:.1f}/10  {insights_engine.get_score_emoji(scores['safety']*10)}")
+            print(f"  🛣️  Roads & Access:    {scores['roads']:.1f}/5   {insights_engine.get_score_emoji(scores['roads']*20)}")
             
             print(f"\n💡 SMART INSIGHTS - What Smart Agents Notice:")
             print("-" * 80)
@@ -790,29 +792,30 @@ class HouseAnalyzer:
                     print(f"     Address: {loc['address']}")
                     print(f"     Distance: {loc['distance_km']:.3f} km ({loc['distance_m']:.0f} m)")
         
-        # Transport details
-        print(f"\n🚇 MRT STATIONS")
+        # Public Transport details
+        print(f"\n🚇🚌 PUBLIC TRANSPORT")
         print("-" * 80)
-        if results['transport'].get('mrt_stations'):
-            for i, mrt in enumerate(results['transport']['mrt_stations'][:10], 1):
+        print(f"\n🚇 MRT Stations:")
+        if results['public_transport'].get('mrt_stations'):
+            for i, mrt in enumerate(results['public_transport']['mrt_stations'][:10], 1):
                 print(f"  {i}. {mrt['name']}")
                 print(f"     Distance: {mrt['distance_km']:.3f} km ({mrt['distance_m']:.0f} m)")
         else:
             print("  No MRT stations found within 5 km")
         
-        print(f"\n🚌 BUS STOPS")
-        print("-" * 80)
-        if results['transport'].get('bus_stops'):
-            for i, bus in enumerate(results['transport']['bus_stops'][:10], 1):
+        print(f"\n🚌 Bus Stops:")
+        if results['public_transport'].get('bus_stops'):
+            for i, bus in enumerate(results['public_transport']['bus_stops'][:10], 1):
                 print(f"  {i}. {bus['name']}")
                 print(f"     Distance: {bus['distance_km']:.3f} km ({bus['distance_m']:.0f} m)")
         else:
             print("  No bus stops found within 1 km")
         
-        print(f"\n🛣️  MAJOR ROADS & EXPRESSWAYS")
+        # Roads details
+        print(f"\n🛣️  ROADS & EXPRESSWAYS")
         print("-" * 80)
-        if results['transport'].get('major_roads'):
-            for i, road in enumerate(results['transport']['major_roads'][:10], 1):
+        if results['roads'].get('expressways'):
+            for i, road in enumerate(results['roads']['expressways'][:10], 1):
                 print(f"  {i}. {road['name']} ({road['type']})")
                 print(f"     Distance: {road['distance_km']:.3f} km ({road['distance_m']:.0f} m)")
         else:
